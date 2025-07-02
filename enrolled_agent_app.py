@@ -2,29 +2,30 @@ import streamlit as st
 import json
 import random
 
-# Titolo dell'app
+# Titolo e layout
 st.set_page_config(page_title="Enrolled Agent Exam Simulator", layout="wide")
 st.title("🧾 Enrolled Agent Exam Simulator")
 st.markdown("Simula il tuo test di abilitazione con 1000 domande casuali!")
 
-# Carica le domande dal file JSON
+# Funzione per caricare le domande
 @st.cache_data
 def load_questions():
     with open("enrolled_agent_test_questions_1000.json", "r", encoding="utf-8") as f:
         return json.load(f)
 
+# Caricamento domande
 questions = load_questions()
 
-# Selezione del numero di domande da mostrare
+# Selezione numero di domande
 num_questions = st.slider("Quante domande vuoi nel test?", 5, 100, 50)
 
-# Sottoselezione casuale delle domande
+# Selezione casuale delle domande
 selected_questions = random.sample(questions, num_questions)
 
-# Dizionario per memorizzare le risposte dell'utente
+# Dizionario per risposte utente
 user_answers = {}
 
-# Mostra le domande
+# Mostra domande
 st.header("📋 Domande")
 for idx, q in enumerate(selected_questions):
     st.subheader(f"{idx + 1}. {q['question']}")
@@ -35,7 +36,7 @@ for idx, q in enumerate(selected_questions):
         key=q["id"]
     )
 
-# Calcolo del punteggio
+# Calcola punteggio
 if st.button("✅ Verifica Risposte"):
     score = 0
     unanswered = 0
@@ -65,4 +66,3 @@ if st.button("✅ Verifica Risposte"):
             st.markdown(f"**{i}. {question}**")
             st.markdown(f"Risposta tua: `{user_answer if user_answer else 'Nessuna'}` — {result}")
             st.markdown("---")
-
