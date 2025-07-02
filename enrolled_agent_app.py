@@ -2,6 +2,11 @@ import streamlit as st
 import json
 import random
 
+# Titolo dell'app
+st.set_page_config(page_title="Enrolled Agent Exam Simulator", layout="wide")
+st.title("🧾 Enrolled Agent Exam Simulator")
+st.markdown("Simula il tuo test di abilitazione con 1000 domande casuali!")
+
 # Carica le domande dal file JSON
 @st.cache_data
 def load_questions():
@@ -10,40 +15,54 @@ def load_questions():
 
 questions = load_questions()
 
-st.title("🧾 Enrolled Agent Practice Test")
-st.markdown("Test your knowledge with multiple-choice questions based on the EA exam.")
+# Selezione del numero di domande da mostrare
+num_questions = st.slider("Quante domande vuoi nel test?", 5, 100, 50)
 
-# Scelta numero di domande
-num_questions = st.slider("Select number of questions:", 5, 50, 10)
+# Sottoselezione casuale delle domande
 selected_questions = random.sample(questions, num_questions)
 
+# Dizionario per memorizzare le risposte dell'utente
 user_answers = {}
 
-st.divider()
+# Mostra le domande
+st.header("📋 Domande")
 for idx, q in enumerate(selected_questions):
-    st.subheader(f"Question {idx + 1}:")
-    st.write(q["question"])
+    st.subheader(f"{idx + 1}. {q['question']}")
     user_answers[q["id"]] = st.radio(
-        label="Select an answer:",
-        options=["A", "B", "C"],
+        label="Seleziona una risposta:",
+        options=["", "A", "B", "C"],
+        format_func=lambda x: "— Nessuna risposta —" if x == "" else x,
         key=q["id"]
     )
 
-st.divider()
-
-if st.button("Submit Test"):
+# Calcolo del punteggio
+if st.button("✅ Verifica Risposte"):
     score = 0
-    st.subheader("📊 Results")
-    for q in selected_questions:
-        correct = q["correct_option"]
-        user_ans = user_answers[q["id"]]
-        is_correct = user_ans == correct
-        if is_correct:
-            score += 1
-        st.markdown(f"**Q: {q['question']}**")
-        st.markdown(f"Your answer: {user_ans} {'✅' if is_correct else '❌'}")
-        if not is_correct:
-            st.markdown(f"Correct answer: **{correct}**")
-        st.markdown("---")
+    unanswered = 0
+    results = []
 
-    st.success(f"You scored {score} out of {num_questions}.")
+    for q in selected_questions:
+        user_answer = user_answers.get(q["id"], "")
+        correct_answer = q["correct_option"]
+
+        if user_answer == "":
+            unanswered += 1
+            result = "⏭️ Non risposto"
+        elif user_answer == correct_answer:
+            score += 1
+            result = "✅ Corretto"
+        else:
+            result = f"❌ Errato (giusta: {correct_answer})"
+
+        results.append((q["question"], user_answer, result))
+
+    st.subheader("📊 Risultati")
+    st.write(f"Domande corrette: **{score} / {num_questions}**")
+    st.write(f"Domande non risposte: **{unanswered}**")
+
+    with st.expander("📖 Dettagli risposta per domanda"):
+        for i, (question, user_answer, result) in enumerate(results, 1):
+            st.markdown(f"**{i}. {question}**")
+            st.markdown(f"Risposta tua: `{user_answer if user_answer else 'Nessuna'}` — {result}")
+            st.markdown("---")
+
