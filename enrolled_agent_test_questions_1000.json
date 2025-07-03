@@ -9000,3 +9000,10 @@
     "answer": "C"
   }
 ]
+questions = load_questions()
+
+# --- DEBUG: vedi struttura del JSON ---
+st.write("📦 Numero totale domande caricate:", len(questions))
+st.write("🔍 Primo elemento JSON:", questions[0])
+st.write("📑 Chiavi disponibili:", list(questions[0].keys()))
+st.markdown("---")
