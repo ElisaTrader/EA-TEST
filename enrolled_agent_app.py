@@ -2,48 +2,63 @@ import streamlit as st
 import json
 import random
 
-st.set_page_config(page_title="Simulatore Test Enrolled Agent", layout="wide")
+st.set_page_config(page_title="EA Practice Test", layout="wide")
 
+# Carica le domande con cache
 @st.cache_data
 def load_questions():
-    with open("enrolled_agent_test_questions_1000.json", "r") as file:
-        return json.load(file)
+    with open("enrolled_agent_test_questions_1000.json", "r", encoding="utf-8") as file:
+        data = json.load(file)
+    return data
 
+# Carica le domande
 questions = load_questions()
 
-st.title("📘 Simulatore Test Enrolled Agent")
+st.title("🧾 Enrolled Agent Practice Test")
 st.markdown("Simula il tuo test di abilitazione con 1000 domande casuali!")
 
-num_questions = st.slider("Numero di domande nel test:", 10, 100, 20)
-
+num_questions = st.slider("Quante domande vuoi esercitarti?", 5, 50, 10)
 selected_questions = random.sample(questions, num_questions)
 
-user_answers = []
-score = 0
+responses = []
+
+st.subheader("📋 Domande")
 
 for idx, q in enumerate(selected_questions):
-    st.subheader(f"{idx + 1}. {q['question']}")
-    options = q["options"]
-    user_choice = st.radio(
-        "Seleziona una risposta:",
-        ["🔘 Nessuna risposta selezionata"] + options,
-        key=f"question_{idx}",
-        index=0
+    st.markdown(f"**{idx + 1}. {q['question']}**")
+    user_answer = st.radio(
+        f"Domanda {idx + 1}",
+        options=["🔘 Nessuna risposta selezionata"] + q["options"],
+        index=0,
+        key=f"question_{idx}"
     )
-    user_answers.append((q, user_choice))
+    responses.append({
+        "question": q["question"],
+        "selected": user_answer,
+        "correct": q["answer"],
+        "explanation": q.get("explanation", "Nessuna spiegazione disponibile."),
+        "category": q.get("category", "Generale")
+    })
+    st.markdown("---")
 
-if st.button("🔎 Correggi il test"):
-    st.subheader("Risultati:")
-    for idx, (q, user_choice) in enumerate(user_answers):
-        correct = q["correct"]
-        is_correct = user_choice == correct
-        if user_choice == "🔘 Nessuna risposta selezionata":
-            result_text = f"❌ Non risposto. Risposta corretta: **{correct}**"
-        elif is_correct:
-            result_text = f"✅ Corretta: **{user_choice}**"
-            score += 1
-        else:
-            result_text = f"❌ Sbagliata. Hai scelto: {user_choice}. Corretta: **{correct}**"
-        st.markdown(f"**Domanda {idx + 1}**: {result_text}")
+if st.button("📊 Visualizza Risultati"):
+    st.subheader("📈 Risultati")
 
-    st.success(f"💯 Punteggio finale: **{score} / {num_questions}**")
+    total = len(responses)
+    correct = sum(1 for r in responses if r["selected"] == r["correct"])
+    skipped = sum(1 for r in responses if r["selected"] == "🔘 Nessuna risposta selezionata")
+
+    st.write(f"Totale domande: **{total}**")
+    st.write(f"Corrette: **{correct}**")
+    st.write(f"Saltate: **{skipped}**")
+    st.write(f"Punteggio: **{(correct / total) * 100:.1f}%**")
+
+    for r in responses:
+        is_correct = r["selected"] == r["correct"]
+        color = "✅" if is_correct else "❌"
+        st.markdown(f"{color} **Domanda:** {r['question']}")
+        st.markdown(f"• Tua risposta: `{r['selected']}`")
+        st.markdown(f"• Corretta: `{r['correct']}`")
+        st.markdown(f"• Categoria: _{r['category']}_")
+        st.markdown(f"• Spiegazione: {r['explanation']}")
+        st.markdown("---")
