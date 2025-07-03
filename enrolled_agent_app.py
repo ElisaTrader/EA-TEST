@@ -25,17 +25,26 @@ responses = []
 st.subheader("📋 Domande")
 
 for idx, q in enumerate(selected_questions):
-    st.markdown(f"**{idx + 1}. {q['question']}**")
+    question_text = q.get("question", f"[Domanda mancante {idx}]")
+    options = q.get("options")
+
+    if not isinstance(options, list) or not options:
+        st.error(f"⚠️ Domanda {idx + 1} ha opzioni non valide o mancanti. Saltata.")
+        continue  # passa alla prossima domanda
+
+    st.markdown(f"**{idx + 1}. {question_text}**")
+
     user_answer = st.radio(
         f"Domanda {idx + 1}",
-        options=["🔘 Nessuna risposta selezionata"] + q["options"],
+        options=["🔘 Nessuna risposta selezionata"] + options,
         index=0,
         key=f"question_{idx}"
     )
+
     responses.append({
-        "question": q["question"],
+        "question": question_text,
         "selected": user_answer,
-        "correct": q["answer"],
+        "correct": q.get("answer", ""),
         "explanation": q.get("explanation", "Nessuna spiegazione disponibile."),
         "category": q.get("category", "Generale")
     })
