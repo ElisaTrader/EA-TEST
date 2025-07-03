@@ -6,7 +6,6 @@ st.set_page_config(page_title="EA Practice Test", layout="wide")
 st.title("🧾 Enrolled Agent Practice Test")
 st.markdown("Simula il tuo test di abilitazione con 1000 domande casuali!")
 
-# Carica le domande con cache
 @st.cache_data
 def load_questions():
     with open("enrolled_agent_test_questions_1000.json", "r", encoding="utf-8") as f:
@@ -14,7 +13,6 @@ def load_questions():
 
 questions = load_questions()
 
-# Numero di domande da estrarre
 num_questions = st.slider("Quante domande vuoi esercitarti?", 5, 50, 10)
 selected_questions = random.sample(questions, min(num_questions, len(questions)))
 
@@ -24,20 +22,23 @@ valid_count = 0
 st.subheader("📋 Domande")
 
 for idx, q in enumerate(selected_questions):
-    question_text = q.get("question", "Domanda non disponibile")
-    options = q.get("options")
-
-    # Verifica che options sia una lista non vuota
+    # Recupero domanda
+    question_text = q.get("question") or q.get("text") or f"[Domanda mancante {idx+1}]"
+    # Recupero opzioni
+    options = q.get("options") or q.get("choices") or q.get("answers") or []
+    if isinstance(options, str):
+        options = [opt.strip() for opt in options.split(",") if opt.strip()]
     if not isinstance(options, list) or len(options) < 2:
-        st.warning(f"⚠️ Domanda {idx + 1} ha opzioni non valide o mancanti. Saltata.")
+        st.warning(f"⚠️ Domanda {idx+1} malformata, opzioni non valide. Saltata.")
         continue
-
-    # Incremento contatore domande valide
     valid_count += 1
 
-    st.markdown(f"**{idx + 1}. {question_text}**")
+    # Recupero risposta corretta
+    correct = q.get("answer") or q.get("correct") or q.get("correct_option") or ""
+
+    st.markdown(f"**{valid_count}. {question_text}**")
     user_choice = st.radio(
-        f"Domanda {idx + 1}",
+        f"Domanda {valid_count}",
         options=["🔘 Nessuna risposta selezionata"] + options,
         index=0,
         key=f"question_{idx}"
@@ -45,33 +46,26 @@ for idx, q in enumerate(selected_questions):
     responses.append({
         "question": question_text,
         "selected": user_choice,
-        "correct": q.get("answer", ""),
-        "explanation": q.get("explanation", "Nessuna spiegazione disponibile."),
-        "category": q.get("category", "Generale")
+        "correct": correct,
+        "explanation": q.get("explanation", "Nessuna spiegazione."),
+        "category": q.get("category", "")
     })
     st.markdown("---")
 
-# Se non c’è almeno una domanda valida, informiamo l’utente
+# Se non ci sono domande valide
 if valid_count == 0:
-    st.error("❗ Non ci sono domande valide da mostrare. Controlla il tuo file JSON!")
+    st.error("❗ Non ci sono domande valide. Controlla il JSON!")
 else:
     if st.button("📊 Visualizza Risultati"):
-        total = valid_count
         correct = sum(1 for r in responses if r["selected"] == r["correct"])
         skipped = sum(1 for r in responses if r["selected"] == "🔘 Nessuna risposta selezionata")
-
-        st.subheader("📈 Risultati")
-        st.write(f"Totale domande valide: **{total}**")
-        st.write(f"Corrette: **{correct}**")
-        st.write(f"Saltate: **{skipped}**")
-        st.write(f"Punteggio: **{(correct / total) * 100:.1f}%**")
-
-        for idx, r in enumerate(responses, 1):
-            is_correct = r["selected"] == r["correct"]
-            icon = "✅" if is_correct else "❌"
-            st.markdown(f"{icon} **Domanda {idx}:** {r['question']}")
+        st.write(f"**Totale domande:** {valid_count}")
+        st.write(f"**Corrette:** {correct}")
+        st.write(f"**Saltate:** {skipped}")
+        st.write(f"**Punteggio:** {(correct/valid_count)*100:.1f}%")
+        for i, r in enumerate(responses, 1):
+            icon = "✅" if r["selected"] == r["correct"] else "❌"
+            st.markdown(f"{icon} **Domanda {i}:** {r['question']}")
             st.markdown(f"- Tua risposta: `{r['selected']}`")
-            st.markdown(f"- Risposta corretta: `{r['correct']}`")
-            st.markdown(f"- Categoria: _{r['category']}_")
-            st.markdown(f"- Spiegazione: {r['explanation']}")
+            st.markdown(f"- Corretta: `{r['correct']}`")
             st.markdown("---")
